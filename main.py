@@ -12,7 +12,7 @@ import data_processing
 import db_operator
 import private_constants
 from data_processing import parse_time
-from send_IPU import send_data
+from send_data import send_data
 from tunnel import launch_tunnel
 
 # from flask_sslify import SSLify

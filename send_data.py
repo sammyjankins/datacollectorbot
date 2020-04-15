@@ -4,7 +4,6 @@ from email.header import Header
 from email.mime.text import MIMEText
 
 import db_operator
-import dbworker
 import private_constants
 
 
