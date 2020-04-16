@@ -1,20 +1,7 @@
 from datetime import datetime
 from sys import _getframe
 
-from geopy.geocoders import Nominatim
-from timezonefinder import TimezoneFinder
-
 from data_processing import parse_time
-
-tf = TimezoneFinder()
-
-gl = Nominatim(user_agent='reminder_geocounter')
-
-
-def get_tz_name(city):
-    lc = gl.geocode(city)
-    tz = tf.timezone_at(lng=float(lc.raw['lon']), lat=float(lc.raw['lat']))
-    return tz
 
 
 def get_user_tz_delta(data):

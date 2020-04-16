@@ -5,6 +5,7 @@ from threading import Timer, Lock, Thread, TIMEOUT_MAX
 
 from dateparser import parse
 from flask import Flask, request, jsonify, redirect
+from flask_sslify import SSLify
 
 import bot_actions
 import constants
@@ -15,12 +16,9 @@ from data_processing import parse_time
 from send_data import send_data
 from tunnel import launch_tunnel
 
-# from flask_sslify import SSLify
-
-
-# sslify = SSLify(app)
-
 app = Flask(__name__)
+# comment line below when running on local machine with ngrok tunnel
+sslify = SSLify(app)
 
 lock = Lock()
 timers = {}
@@ -284,8 +282,8 @@ def user_set_timer(message, user_id):
         if seconds.total_seconds() > TIMEOUT_MAX:
             timer = Timer(timedelta(days=30).total_seconds(), user_set_timer, args=(None, user_id))
         else:
-            timer = Timer(seconds.total_seconds() - timedelta(hours=user['tz_delta']).total_seconds(), when_timer_stop,
-                          args=(False, user_id))
+            timer = Timer(seconds.total_seconds() - timedelta(hours=user['tz_delta']).total_seconds(),
+                          lambda: when_timer_stop(False, user_id))
         timers.update({user_id: {'timer': timer,
                                  'in_progress': False}})
         timers[user_id]['timer'].start()
@@ -348,6 +346,7 @@ callbacks = {
 }
 
 
+@app.route('/')
 @app.route(f'/{private_constants.token}', methods=['POST', 'GET'])
 def index(message=None):
     if request.method == 'POST':
@@ -356,7 +355,7 @@ def index(message=None):
             chat_id = r['message']['chat']['id']
             if not message:
                 message = r['message']['text']
-        except KeyError:
+        except Exception:
             call_data = r['callback_query']['data']
             chat_id = r['callback_query']['message']['chat']['id']
             if call_data in constants.choose_period.keys():
@@ -386,11 +385,15 @@ def index(message=None):
 
 sch = sched.scheduler(time.time, time.sleep)
 
+users = db_operator.get_users()
+if users is not None:
+    for person in users:
+        user_set_timer('', str(person))
+
 if __name__ == '__main__':
-    launch_tunnel()
-    with lock:
-        Thread(target=app.run).start()
-    users = db_operator.get_users()
-    if users is not None:
-        for person in users:
-            user_set_timer('', str(person))
+    # delete 'True' in line below when running on local machine with ngrok tunnel
+    launch_tunnel(True)
+    # uncomment 'with' statement when running on local machine with ngrok tunnel
+    # with lock:
+    #     Thread(target=app.run).start()
+    app.run()
